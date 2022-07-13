@@ -229,15 +229,6 @@ task integrationTestKms(type: Test) {
   }
 }
 
-task spannerTests(type: Test) {
-  group = "Verification"
-  description = "Runs Cloud Spanner related tests within Google Cloud Platform"
-  filter {
-    includeTestsMatching 'org.apache.beam.sdk.io.gcp.spanner.*'
-    excludeTestsMatching 'org.apache.beam.sdk.io.gcp.spanner.*IT'
-  }
-}
-
 def spannerIncludes = [
         '**/org/apache/beam/sdk/io/gcp/spanner/**',
 ]
@@ -247,7 +238,7 @@ def jacocoExcludes = [
         '**/*IT*',
 ]
 
-task spannerCodeCoverageReport(type: JacocoReport, dependsOn: spannerTests) {
+task spannerCodeCoverageReport(type: JacocoReport, dependsOn: test) {
   group = "Reporting"
   description = "Generates code coverage report for Cloud Spanner related classes"
   classDirectories.setFrom(project.files(
@@ -258,7 +249,7 @@ task spannerCodeCoverageReport(type: JacocoReport, dependsOn: spannerTests) {
           )
   )
   )
-  executionData.setFrom(file("${buildDir}/jacoco/spannerTests.exec"))
+  executionData.setFrom(file("${buildDir}/jacoco/test.exec"))
   reports {
     html.enabled true
     html.destination file("${buildDir}/reports/jacoco/spanner/")
@@ -276,7 +267,7 @@ task spannerCodeCoverageVerification(type: JacocoCoverageVerification, dependsOn
           )
   )
   )
-  executionData.setFrom(fileTree(project.rootDir.absolutePath).include("**/build/jacoco/spannerTests.exec"))
+  executionData.setFrom(fileTree(project.rootDir.absolutePath).include("**/build/jacoco/test.exec"))
   violationRules {
     failOnViolation = true
     rule {
@@ -293,7 +284,7 @@ task spannerCodeCoverageVerification(type: JacocoCoverageVerification, dependsOn
 
 // make the check task depend on spannerCodeCoverageVerification so that the build
 // fails when the code coverage threshold is violated.
-project.build.finalizedBy "spannerCodeCoverageVerification"
+project.check.dependsOn "spannerCodeCoverageVerification"
 
 task postCommit {
   group = "Verification"
