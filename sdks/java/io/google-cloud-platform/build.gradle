@@ -229,6 +229,11 @@ task integrationTestKms(type: Test) {
   }
 }
 
+// path(s) for Cloud Spanner related classes
+def spannerIncludes = [
+        '**/org/apache/beam/sdk/io/gcp/spanner/**',
+]
+
 // exclude auto-generated classes and integration tests
 def jacocoExcludes = [
         '**/AutoValue_*',
@@ -238,13 +243,12 @@ def jacocoExcludes = [
 task spannerCodeCoverageReport(type: JacocoReport, dependsOn: test) {
   group = "Reporting"
   description = "Generates code coverage report for Cloud Spanner related classes"
-  classDirectories.setFrom(project.files(
-          project.fileTree(
-                  dir: "${buildDir}/classes/java/main/org/apache/beam/sdk/io/gcp/spanner",
-                  excludes: jacocoExcludes
-          )
-  )
-  )
+  classDirectories.setFrom(files(files(project.sourceSets.main.output).collect {
+            project.fileTree(
+                    dir: it,
+                    includes: spannerIncludes,
+                    excludes: jacocoExcludes)
+  }))
   sourceDirectories.setFrom(files(project.sourceSets.main.allSource.srcDirs))
   executionData.setFrom(file("${buildDir}/jacoco/test.exec"))
   reports {
@@ -256,13 +260,12 @@ task spannerCodeCoverageReport(type: JacocoReport, dependsOn: test) {
 task spannerCodeCoverageVerification(type: JacocoCoverageVerification, dependsOn: spannerCodeCoverageReport) {
   group = "Verification"
   description = "Enforces code coverage verification for Cloud Spanner related classes"
-  classDirectories.setFrom(project.files(
-          project.fileTree(
-                  dir: "${buildDir}/classes/java/main/org/apache/beam/sdk/io/gcp/spanner",
-                  excludes: jacocoExcludes
-          )
-  )
-  )
+  classDirectories.setFrom(files(files(project.sourceSets.main.output).collect {
+    project.fileTree(
+            dir: it,
+            includes: spannerIncludes,
+            excludes: jacocoExcludes)
+  }))
   sourceDirectories.setFrom(files(project.sourceSets.main.allSource.srcDirs))
   executionData.setFrom(file("${buildDir}/jacoco/test.exec"))
   violationRules {
