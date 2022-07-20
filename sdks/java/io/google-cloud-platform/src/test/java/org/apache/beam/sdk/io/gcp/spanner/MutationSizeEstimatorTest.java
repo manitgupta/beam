@@ -24,10 +24,14 @@ import static org.hamcrest.Matchers.is;
 import com.google.cloud.ByteArray;
 import com.google.cloud.Date;
 import com.google.cloud.Timestamp;
-import com.google.cloud.spanner.*;
-
+import com.google.cloud.spanner.Key;
+import com.google.cloud.spanner.KeyRange;
+import com.google.cloud.spanner.KeySet;
+import com.google.cloud.spanner.Mutation;
+import com.google.cloud.spanner.Struct;
+import com.google.cloud.spanner.Type;
+import com.google.cloud.spanner.Value;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableList;
 import org.junit.Test;
@@ -123,9 +127,9 @@ public class MutationSizeEstimatorTest {
         Mutation.newInsertOrUpdateBuilder("test")
             .set("bytes")
             .toBytesArray(
-                    ImmutableList.of(
-                            ByteArray.copyFrom("some_bytes".getBytes(UTF_8)),
-                            ByteArray.copyFrom("some_bytes".getBytes(UTF_8))))
+                ImmutableList.of(
+                    ByteArray.copyFrom("some_bytes".getBytes(UTF_8)),
+                    ByteArray.copyFrom("some_bytes".getBytes(UTF_8))))
             .build();
     assertThat(MutationSizeEstimator.sizeOf(int64), is(24L));
     assertThat(MutationSizeEstimator.sizeOf(float64), is(16L));
@@ -203,7 +207,8 @@ public class MutationSizeEstimatorTest {
             .build();
     Mutation nullArray =
         Mutation.newInsertOrUpdateBuilder("test").set("one").toBytesArray(null).build();
-    Mutation deleteBytes = Mutation.delete("test", Key.of(ByteArray.copyFrom("some_bytes".getBytes(UTF_8))));
+    Mutation deleteBytes =
+        Mutation.delete("test", Key.of(ByteArray.copyFrom("some_bytes".getBytes(UTF_8))));
 
     assertThat(MutationSizeEstimator.sizeOf(empty), is(0L));
     assertThat(MutationSizeEstimator.sizeOf(nullValue), is(0L));
@@ -265,7 +270,8 @@ public class MutationSizeEstimatorTest {
         Mutation.newInsertOrUpdateBuilder("test").set("one").toTimestampArray(null).build();
     Mutation nullDateArray =
         Mutation.newInsertOrUpdateBuilder("test").set("one").toDateArray(null).build();
-    Mutation deleteTimestamp = Mutation.delete("test", Key.of(Timestamp.parseTimestamp("2077-10-15T00:00:00Z")));
+    Mutation deleteTimestamp =
+        Mutation.delete("test", Key.of(Timestamp.parseTimestamp("2077-10-15T00:00:00Z")));
     Mutation deleteDate = Mutation.delete("test", Key.of(Date.fromYearMonthDay(2017, 1, 1)));
 
     assertThat(MutationSizeEstimator.sizeOf(timestamp), is(12L));
@@ -293,22 +299,26 @@ public class MutationSizeEstimatorTest {
 
   @Test
   public void deleteKeyRanges() throws Exception {
-    Mutation range = Mutation.delete("test",
-            KeySet.range(KeyRange.openOpen(Key.of(1L), Key.of(4L))));
+    Mutation range =
+        Mutation.delete("test", KeySet.range(KeyRange.openOpen(Key.of(1L), Key.of(4L))));
     assertThat(MutationSizeEstimator.sizeOf(range), is(16L));
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void unsupportedArrayType() {
-    Mutation unsupportedArray = Mutation.newInsertOrUpdateBuilder("test")
+    Mutation unsupportedArray =
+        Mutation.newInsertOrUpdateBuilder("test")
             .set("one")
-            .toStructArray(Type.struct(Type.StructField.of("int64", Type.int64())), ImmutableList.of())
+            .toStructArray(
+                Type.struct(Type.StructField.of("int64", Type.int64())), ImmutableList.of())
             .build();
     MutationSizeEstimator.sizeOf(unsupportedArray);
   }
+
   @Test(expected = IllegalArgumentException.class)
   public void unsupportedStructType() {
-    Mutation struct = Mutation.newInsertOrUpdateBuilder("test")
+    Mutation struct =
+        Mutation.newInsertOrUpdateBuilder("test")
             .set("one")
             .to(Struct.newBuilder().build())
             .build();
